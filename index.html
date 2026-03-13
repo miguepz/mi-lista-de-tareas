@@ -2,51 +2,55 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>Evaluacion Final</title>
+    <title>ENTREGA FINAL</title>
     <script src="https://unpkg.com"></script>
 </head>
 <body>
-    <h3>Mi Lista de Tareas</h3>
-    <input type="text" id="tarea" placeholder="Escribir...">
-    <button onclick="guardar()">AGREGAR TAREA</button>
-    <div id="lista" style="margin-top: 20px;"></div>
+    <h1>LISTA DE TAREAS</h1>
+    <input type="text" id="tareaInput" placeholder="Escribe algo...">
+    <button onclick="enviar()">PROBAR BOTON</button>
+    <div id="contenedor"></div>
 
     <script>
-        // REEMPLAZA CON TUS DATOS REALES
-        const URL = 'https://efjcmudrgomexsznwwmc.supabase.co';
-        const KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVmamNtdWRyZ29tZXhzem53d21jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM0MjAzODYsImV4cCI6MjA4ODk5NjM4Nn0.oI2_XJND51OrN42KuduzMeEYWpTbjWw0qqT-';
-        
-        let supabaseClient;
+        const SB_URL = 'https://efjcmudrgomexsznwwmc.supabase.co';
+        const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVmamNtdWRyZ29tZXhzem53d21jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM0MjAzODYsImV4cCI6MjA4ODk5NjM4Nn0.oI2_XJND51OrN42KuduzMeEYWpTbjWw0qqT-';
 
-        // Iniciar conexion
-        window.onload = () => {
-            supabaseClient = supabase.createClient(URL, KEY);
-            mostrar();
-        };
+        // 1. Esto nos dirá si el código cargó
+        console.log("Código cargado correctamente");
 
-        async function mostrar() {
-            const { data } = await supabaseClient.from('todos').select('*').order('id', { ascending: false });
-            const div = document.getElementById('lista');
-            div.innerHTML = data ? data.map(t => 
-                `<div>- ${t.task} <button onclick="borrar(${t.id})">Borrar</button></div>`
-            ).join('') : 'Cargando...';
+        async function enviar() {
+            alert("¡El botón funciona! Ahora intentando conectar...");
+            
+            const client = supabase.createClient(SB_URL, SB_KEY);
+            const texto = document.getElementById('tareaInput').value;
+
+            const { error } = await client.from('todos').insert([{ task: texto }]);
+
+            if (error) {
+                alert("Error de Supabase: " + error.message);
+            } else {
+                alert("¡Guardado con éxito!");
+                location.reload(); // Recarga para ver la lista
+            }
         }
 
-        async function guardar() {
-            const input = document.getElementById('tarea');
-            if(!input.value) return alert("Escribe algo");
-            
-            const { error } = await supabaseClient.from('todos').insert([{ task: input.value }]);
-            if(error) return alert("Error de Permisos: " + error.message);
-            
-            input.value = '';
-            mostrar();
+        async function cargar() {
+            const client = supabase.createClient(SB_URL, SB_KEY);
+            const { data } = await client.from('todos').select('*');
+            if (data) {
+                document.getElementById('contenedor').innerHTML = data.map(t => 
+                    `<p>${t.task} <button onclick="borrar(${t.id})">X</button></p>`
+                ).join('');
+            }
         }
 
         async function borrar(id) {
-            await supabaseClient.from('todos').delete().eq('id', id);
-            mostrar();
+            const client = supabase.createClient(SB_URL, SB_KEY);
+            await client.from('todos').delete().eq('id', id);
+            location.reload();
         }
+
+        cargar();
     </script>
 </body>
 </html>
