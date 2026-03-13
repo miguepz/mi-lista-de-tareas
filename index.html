@@ -2,62 +2,71 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Evaluación: Lista de Tareas</title>
-    <!-- Cargamos la librería de Supabase primero -->
+    <title>Evaluación Base de Datos</title>
+    <!-- Cargamos la librería obligatoriamente aquí -->
     <script src="https://cdn.jsdelivr.net"></script>
     <style>
-        body { font-family: sans-serif; max-width: 400px; margin: 40px auto; padding: 20px; }
-        .item { display: flex; justify-content: space-between; padding: 10px; border-bottom: 1px solid #ddd; }
-        button { cursor: pointer; }
+        body { font-family: sans-serif; max-width: 400px; margin: 40px auto; padding: 20px; background: #f9f9f9; }
+        .caja { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        input { width: 70%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
+        button { padding: 8px; cursor: pointer; background: #007bff; color: white; border: none; border-radius: 4px; }
+        .tarea { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px dotted #ccc; }
     </style>
 </head>
 <body>
-    <h2>Mi Base de Datos de Tareas</h2>
-    <input type="text" id="inputTarea" placeholder="Escribe algo...">
-    <button onclick="crearTarea()">Agregar</button>
-    <div id="lista"></div>
+    <div class="caja">
+        <h3>Lista de Tareas Real</h3>
+        <input type="text" id="txtTarea" placeholder="Nueva tarea...">
+        <button onclick="guardar()">Ok</button>
+        <div id="contenedor"></div>
+    </div>
 
     <script>
-        // REEMPLAZA ESTOS DOS VALORES CON LOS TUYOS
-        const URL = 'https://efjcmudrgomexsznwwmc.supabase.co';
-        const KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVmamNtdWRyZ29tZXhzem53d21jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM0MjAzODYsImV4cCI6MjA4ODk5NjM4Nn0.oI2_XJND51OrN42KuduzMeEYWpTbjWw0qqT-';
-        
-        // Creamos la conexión
-        const supabaseClient = supabase.createClient(URL, KEY);
+        let db; // Variable para la base de datos
 
-        // Función para mostrar tareas
-        async function obtenerTareas() {
-            const { data, error } = await supabaseClient.from('todos').select('*').order('id', { ascending: false });
-            if (error) { console.log(error); return; }
-            
-            const contenedor = document.getElementById('lista');
-            contenedor.innerHTML = '';
-            data.forEach(tarea => {
-                contenedor.innerHTML += `
-                    <div class="item">
-                        <span>${tarea.task}</span>
-                        <button onclick="borrarTarea(${tarea.id})">Borrar</button>
-                    </div>`;
-            });
+        // Función que arranca TODO cuando la página está lista
+        window.onload = function() {
+            const URL = 'https://efjcmudrgomexsznwwmc.supabase.co';
+            const KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVmamNtdWRyZ29tZXhzem53d21jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM0MjAzODYsImV4cCI6MjA4ODk5NjM4Nn0.oI2_XJND51OrN42KuduzMeEYWpTbjWw0qqT-';
+
+            // Verificamos si la librería cargó bien
+            if (typeof supabase !== 'undefined') {
+                db = supabase.createClient(URL, KEY);
+                cargar(); // Cargar tareas al inicio
+            } else {
+                alert("Error: La librería Supabase no cargó. Revisa tu internet.");
+            }
+        };
+
+        async function cargar() {
+            if (!db) return;
+            const { data } = await db.from('todos').select('*').order('id', { ascending: false });
+            const div = document.getElementById('contenedor');
+            div.innerHTML = '';
+            if (data) {
+                data.forEach(t => {
+                    div.innerHTML += `
+                        <div class="tarea">
+                            <span>${t.task}</span>
+                            <button onclick="eliminar(${t.id})" style="background:red">X</button>
+                        </div>`;
+                });
+            }
         }
 
-        // Función para crear
-        async function crearTarea() {
-            const txt = document.getElementById('inputTarea').value;
-            if(!txt) return;
-            await supabaseClient.from('todos').insert([{ task: txt, is_completed: false }]);
-            document.getElementById('inputTarea').value = '';
-            obtenerTareas();
+        async function guardar() {
+            const val = document.getElementById('txtTarea').value;
+            if (!val || !db) return;
+            await db.from('todos').insert([{ task: val, is_completed: false }]);
+            document.getElementById('txtTarea').value = '';
+            cargar();
         }
 
-        // Función para borrar
-        async function borrarTarea(id) {
-            await supabaseClient.from('todos').delete().eq('id', id);
-            obtenerTareas();
+        async function eliminar(id) {
+            if (!db) return;
+            await db.from('todos').delete().eq('id', id);
+            cargar();
         }
-
-        // Iniciar al cargar la página
-        obtenerTareas();
     </script>
 </body>
 </html>
