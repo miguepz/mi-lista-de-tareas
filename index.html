@@ -21,14 +21,20 @@
         <div id="lista"></div>
     </div>
 
-    <script>
-        // PEGA TUS DATOS AQUÍ
+   <script>
+    // ESPERAR A QUE LA PÁGINA Y LA LIBRERÍA CARGUEN
+    window.onload = function() {
         const supabaseUrl = 'https://efjcmudrgomexsznwwmc.supabase.co';
         const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVmamNtdWRyZ29tZXhzem53d21jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM0MjAzODYsImV4cCI6MjA4ODk5NjM4Nn0.oI2_XJND51OrN42KuduzMeEYWpTbjWw0qqT-';
+
+        // Inicializamos el cliente dentro de la carga
         const client = supabase.createClient(supabaseUrl, supabaseKey);
 
-        async function obtenerTareas() {
-            const { data } = await client.from('todos').select('*').order('id', { ascending: false });
+        // Definimos las funciones como "window" para que el HTML las vea
+        window.obtenerTareas = async function() {
+            const { data, error } = await client.from('todos').select('*').order('id', { ascending: false });
+            if (error) { console.error(error); return; }
+            
             const listaDiv = document.getElementById('lista');
             listaDiv.innerHTML = '';
             data.forEach(t => {
@@ -40,7 +46,7 @@
             });
         }
 
-        async function crearTarea() {
+        window.crearTarea = async function() {
             const input = document.getElementById('inputTarea');
             if(!input.value) return;
             await client.from('todos').insert([{ task: input.value, is_completed: false }]);
@@ -48,12 +54,14 @@
             obtenerTareas();
         }
 
-        async function borrarTarea(id) {
+        window.borrarTarea = async function(id) {
             await client.from('todos').delete().eq('id', id);
             obtenerTareas();
         }
 
+        // Llamamos a la primera carga
         obtenerTareas();
-    </script>
+    };
+</script>
 </body>
 </html>
