@@ -1,72 +1,55 @@
 <!DOCTYPE html>
-<html lang="es">
+<html>
 <head>
     <meta charset="UTF-8">
-    <title>Evaluación Base de Datos</title>
-    <!-- Cargamos la librería obligatoriamente aquí -->
-    <script src="https://cdn.jsdelivr.net"></script>
-    <style>
-        body { font-family: sans-serif; max-width: 400px; margin: 40px auto; padding: 20px; background: #f9f9f9; }
-        .caja { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        input { width: 70%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
-        button { padding: 8px; cursor: pointer; background: #007bff; color: white; border: none; border-radius: 4px; }
-        .tarea { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px dotted #ccc; }
-    </style>
+    <title>Tarea Base de Datos</title>
+    <!-- Usamos un servidor diferente para la librería (UNPKG) -->
+    <script src="https://unpkg.com"></script>
 </head>
 <body>
-    <div class="caja">
-        <h3>Lista de Tareas Real</h3>
-        <input type="text" id="txtTarea" placeholder="Nueva tarea...">
-        <button onclick="guardar()">Ok</button>
-        <div id="contenedor"></div>
-    </div>
+    <h3>Mi Lista de Tareas</h3>
+    <input type="text" id="nuevaTarea" placeholder="Escribe algo...">
+    <button onclick="enviar()">Agregar</button>
+    <div id="lista"></div>
 
     <script>
-        let db; // Variable para la base de datos
+        // REEMPLAZA CON TUS DATOS
+        const PROYECTO_URL = 'https://efjcmudrgomexsznwwmc.supabase.co';
+        const ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVmamNtdWRyZ29tZXhzem53d21jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM0MjAzODYsImV4cCI6MjA4ODk5NjM4Nn0.oI2_XJND51OrN42KuduzMeEYWpTbjWw0qqT-';
 
-        // Función que arranca TODO cuando la página está lista
-        window.onload = function() {
-            const URL = 'https://efjcmudrgomexsznwwmc.supabase.co';
-            const KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVmamNtdWRyZ29tZXhzem53d21jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM0MjAzODYsImV4cCI6MjA4ODk5NjM4Nn0.oI2_XJND51OrN42KuduzMeEYWpTbjWw0qqT-';
+        // Intentar conectar con la base de datos
+        const db = supabase.createClient(PROYECTO_URL, ANON_KEY);
 
-            // Verificamos si la librería cargó bien
-            if (typeof supabase !== 'undefined') {
-                db = supabase.createClient(URL, KEY);
-                cargar(); // Cargar tareas al inicio
-            } else {
-                alert("Error: La librería Supabase no cargó. Revisa tu internet.");
-            }
-        };
-
-        async function cargar() {
-            if (!db) return;
-            const { data } = await db.from('todos').select('*').order('id', { ascending: false });
-            const div = document.getElementById('contenedor');
-            div.innerHTML = '';
-            if (data) {
-                data.forEach(t => {
-                    div.innerHTML += `
-                        <div class="tarea">
-                            <span>${t.task}</span>
-                            <button onclick="eliminar(${t.id})" style="background:red">X</button>
-                        </div>`;
-                });
-            }
+        // FUNCIÓN PARA VER LAS TAREAS
+        async function ver() {
+            const { data, error } = await db.from('todos').select('*');
+            if (error) { console.log(error); return; }
+            
+            let html = "";
+            data.forEach(t => {
+                html += `<div>${t.task} <button onclick="borrar(${t.id})">Eliminar</button></div>`;
+            });
+            document.getElementById('lista').innerHTML = html;
         }
 
-        async function guardar() {
-            const val = document.getElementById('txtTarea').value;
-            if (!val || !db) return;
-            await db.from('todos').insert([{ task: val, is_completed: false }]);
-            document.getElementById('txtTarea').value = '';
-            cargar();
+        // FUNCIÓN PARA GUARDAR
+        async function enviar() {
+            const texto = document.getElementById('nuevaTarea').value;
+            if(!texto) return;
+            await db.from('todos').insert([{ task: texto }]);
+            document.getElementById('nuevaTarea').value = '';
+            ver();
         }
 
-        async function eliminar(id) {
-            if (!db) return;
+        // FUNCIÓN PARA BORRAR
+        async function borrar(id) {
             await db.from('todos').delete().eq('id', id);
-            cargar();
+            ver();
         }
+
+        // Cargar al iniciar
+        ver();
     </script>
 </body>
 </html>
+
