@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Mi Lista de Tareas - Evaluación</title>
+    <script src="https://cdn.jsdelivr.net"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 500px; margin: 40px auto; padding: 20px; background-color: #f4f4f9; }
+        .container { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        input { padding: 10px; width: 70%; border: 1px solid #ddd; border-radius: 4px; }
+        button { padding: 10px; cursor: pointer; background: #3ecf8e; color: white; border: none; border-radius: 4px; }
+        .tarea { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #eee; }
+        .btn-borrar { background: #ff4d4d; padding: 5px 10px; font-size: 12px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Mi Lista de Tareas</h2>
+        <input type="text" id="inputTarea" placeholder="¿Qué hay que hacer?">
+        <button onclick="crearTarea()">Agregar</button>
+        <div id="lista"></div>
+    </div>
+
+    <script>
+        // PEGA TUS DATOS AQUÍ
+        const supabaseUrl = 'https://efjcmudrgomexsznwwmc.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVmamNtdWRyZ29tZXhzem53d21jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM0MjAzODYsImV4cCI6MjA4ODk5NjM4Nn0.oI2_XJND51OrN42KuduzMeEYWpTbjWw0qqT-';
+        const client = supabase.createClient(supabaseUrl, supabaseKey);
+
+        async function obtenerTareas() {
+            const { data } = await client.from('todos').select('*').order('id', { ascending: false });
+            const listaDiv = document.getElementById('lista');
+            listaDiv.innerHTML = '';
+            data.forEach(t => {
+                listaDiv.innerHTML += `
+                    <div class="tarea">
+                        <span>${t.task}</span>
+                        <button class="btn-borrar" onclick="borrarTarea(${t.id})">Eliminar</button>
+                    </div>`;
+            });
+        }
+
+        async function crearTarea() {
+            const input = document.getElementById('inputTarea');
+            if(!input.value) return;
+            await client.from('todos').insert([{ task: input.value, is_completed: false }]);
+            input.value = '';
+            obtenerTareas();
+        }
+
+        async function borrarTarea(id) {
+            await client.from('todos').delete().eq('id', id);
+            obtenerTareas();
+        }
+
+        obtenerTareas();
+    </script>
+</body>
+</html>
