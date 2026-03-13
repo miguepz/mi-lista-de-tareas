@@ -2,54 +2,51 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>Tarea Base de Datos</title>
-    <!-- Usamos un servidor diferente para la librería (UNPKG) -->
+    <title>Evaluacion Final</title>
     <script src="https://unpkg.com"></script>
 </head>
 <body>
     <h3>Mi Lista de Tareas</h3>
-    <input type="text" id="nuevaTarea" placeholder="Escribe algo...">
-    <button onclick="enviar()">Agregar</button>
-    <div id="lista"></div>
+    <input type="text" id="tarea" placeholder="Escribir...">
+    <button onclick="guardar()">AGREGAR TAREA</button>
+    <div id="lista" style="margin-top: 20px;"></div>
 
     <script>
-        // REEMPLAZA CON TUS DATOS
-        const PROYECTO_URL = 'https://efjcmudrgomexsznwwmc.supabase.co';
-        const ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVmamNtdWRyZ29tZXhzem53d21jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM0MjAzODYsImV4cCI6MjA4ODk5NjM4Nn0.oI2_XJND51OrN42KuduzMeEYWpTbjWw0qqT-';
+        // REEMPLAZA CON TUS DATOS REALES
+        const URL = 'https://efjcmudrgomexsznwwmc.supabase.co';
+        const KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVmamNtdWRyZ29tZXhzem53d21jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM0MjAzODYsImV4cCI6MjA4ODk5NjM4Nn0.oI2_XJND51OrN42KuduzMeEYWpTbjWw0qqT-';
+        
+        let supabaseClient;
 
-        // Intentar conectar con la base de datos
-        const db = supabase.createClient(PROYECTO_URL, ANON_KEY);
+        // Iniciar conexion
+        window.onload = () => {
+            supabaseClient = supabase.createClient(URL, KEY);
+            mostrar();
+        };
 
-        // FUNCIÓN PARA VER LAS TAREAS
-        async function ver() {
-            const { data, error } = await db.from('todos').select('*');
-            if (error) { console.log(error); return; }
+        async function mostrar() {
+            const { data } = await supabaseClient.from('todos').select('*').order('id', { ascending: false });
+            const div = document.getElementById('lista');
+            div.innerHTML = data ? data.map(t => 
+                `<div>- ${t.task} <button onclick="borrar(${t.id})">Borrar</button></div>`
+            ).join('') : 'Cargando...';
+        }
+
+        async function guardar() {
+            const input = document.getElementById('tarea');
+            if(!input.value) return alert("Escribe algo");
             
-            let html = "";
-            data.forEach(t => {
-                html += `<div>${t.task} <button onclick="borrar(${t.id})">Eliminar</button></div>`;
-            });
-            document.getElementById('lista').innerHTML = html;
+            const { error } = await supabaseClient.from('todos').insert([{ task: input.value }]);
+            if(error) return alert("Error de Permisos: " + error.message);
+            
+            input.value = '';
+            mostrar();
         }
 
-        // FUNCIÓN PARA GUARDAR
-        async function enviar() {
-            const texto = document.getElementById('nuevaTarea').value;
-            if(!texto) return;
-            await db.from('todos').insert([{ task: texto }]);
-            document.getElementById('nuevaTarea').value = '';
-            ver();
-        }
-
-        // FUNCIÓN PARA BORRAR
         async function borrar(id) {
-            await db.from('todos').delete().eq('id', id);
-            ver();
+            await supabaseClient.from('todos').delete().eq('id', id);
+            mostrar();
         }
-
-        // Cargar al iniciar
-        ver();
     </script>
 </body>
 </html>
-
