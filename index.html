@@ -2,76 +2,74 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Evaluación Final: Lista de Tareas</title>
-    <!-- 1. CARGAMOS LA LIBRERÍA PRIMERO QUE NADA -->
-    <script src="https://unpkg.com"></script>
+    <title>ENTREGA FINAL - BASE DE DATOS</title>
+    <!-- ESTE ES EL SECRETO: CARGARLA DESDE OTRO SERVIDOR MÁS CONFIABLE -->
+    <script src="https://cdn.jsdelivr.net"></script>
     <style>
-        body { font-family: sans-serif; max-width: 400px; margin: 40px auto; padding: 20px; background: #f4f4f4; }
-        .caja { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        input { width: 70%; padding: 8px; margin-bottom: 10px; }
-        button { padding: 8px; cursor: pointer; }
-        .tarea { display: flex; justify-content: space-between; border-bottom: 1px solid #eee; padding: 10px 0; }
+        body { font-family: sans-serif; text-align: center; padding: 50px; background: #eee; }
+        .caja { background: white; padding: 20px; border-radius: 10px; display: inline-block; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        input { padding: 10px; border: 1px solid #ccc; border-radius: 5px; }
+        button { padding: 10px 20px; background: #24b47e; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        .tarea { margin-top: 15px; border-bottom: 1px solid #ddd; padding: 5px; display: flex; justify-content: space-between; }
     </style>
 </head>
 <body>
+
     <div class="caja">
-        <h2>Mis Tareas (DB Real)</h2>
-        <input type="text" id="tareaInput" placeholder="Nueva tarea...">
-        <button onclick="enviar()">Agregar</button>
+        <h2>Mi Lista de Tareas Real</h2>
+        <input type="text" id="nuevaTarea" placeholder="Escribe aquí...">
+        <button id="btnAgregar">AGREGAR</button>
         <div id="lista"></div>
     </div>
 
     <script>
-        // CONFIGURACIÓN (REEMPLAZA CON TUS DATOS)
-        const SB_URL = 'https://efjcmudrgomexsznwwmc.supabase.co';
-        const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVmamNtdWRyZ29tZXhzem53d21jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM0MjAzODYsImV4cCI6MjA4ODk5NjM4Nn0.oI2_XJND51OrN42KuduzMeEYWpTbjWw0qqT-';
-        let client;
+        // TUS DATOS (CÓPIALOS BIEN)
+        const URL = 'https://efjcmudrgomexsznwwmc.supabase.co';
+        const KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVmamNtdWRyZ29tZXhzem53d21jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM0MjAzODYsImV4cCI6MjA4ODk5NjM4Nn0.oI2_XJND51OrN42KuduzMeEYWpTbjWw0qqT-';
 
-        // ESTA FUNCIÓN ESPERA A QUE TODO CARGUE (EVITA EL ERROR DE 'NOT DEFINED')
-        window.onload = function() {
+        let supabaseClient;
+
+        // FUNCIÓN QUE ARRANCA TODO
+        function iniciar() {
+            // Intentar crear el cliente
             if (typeof supabase !== 'undefined') {
-                client = supabase.createClient(SB_URL, SB_KEY);
-                cargar();
+                supabaseClient = supabase.createClient(URL, KEY);
+                console.log("Conectado a Supabase");
+                cargarTareas();
             } else {
-                alert("Error: No cargó la librería. Reintenta en 5 segundos.");
+                // Si falla, intentamos cargarla otra vez manualmente
+                console.error("La librería no cargó. Reintentando...");
+                setTimeout(iniciar, 2000);
             }
-        };
+        }
 
-        async function cargar() {
-            if (!client) return;
-            // IMPORTANTE: REVISA QUE TU TABLA SE LLAME 'todos' (MINÚSCULA)
-            const { data } = await client.from('todos').select('*').order('id', { ascending: false });
+        async function cargarTareas() {
+            const { data, error } = await supabaseClient.from('todos').select('*').order('id', { ascending: false });
+            if (error) return console.log(error);
+            
             const div = document.getElementById('lista');
             div.innerHTML = '';
-            if (data) {
-                data.forEach(t => {
-                    div.innerHTML += `
-                        <div class="tarea">
-                            <span>${t.task}</span>
-                            <button onclick="borrar(${t.id})" style="color:red">X</button>
-                        </div>`;
-                });
-            }
+            data.forEach(t => {
+                div.innerHTML += `<div class="tarea"><span>${t.task}</span> <button onclick="borrar(${t.id})" style="background:red; padding:2px 5px;">X</button></div>`;
+            });
         }
 
-        async function enviar() {
-            const val = document.getElementById('tareaInput').value;
-            if (!val || !client) return;
+        document.getElementById('btnAgregar').onclick = async () => {
+            const input = document.getElementById('nuevaTarea');
+            if(!input.value) return;
             
-            const { error } = await client.from('todos').insert([{ task: val }]);
-            if (error) {
-                alert("Error de Permisos: " + error.message);
-            } else {
-                document.getElementById('tareaInput').value = '';
-                cargar();
-            }
-        }
+            await supabaseClient.from('todos').insert([{ task: input.value }]);
+            input.value = '';
+            cargarTareas();
+        };
 
         async function borrar(id) {
-            if (!client) return;
-            await client.from('todos').delete().eq('id', id);
-            cargar();
+            await supabaseClient.from('todos').delete().eq('id', id);
+            cargarTareas();
         }
+
+        // Arrancamos la conexión
+        iniciar();
     </script>
 </body>
 </html>
